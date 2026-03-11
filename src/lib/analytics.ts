@@ -49,25 +49,25 @@ export function computeAnalytics(session: Session): SessionAnalytics {
         )
       : 0
 
-  // Mastery Plot: minute -> cab_level for SUCCESS trials
+  // Mastery Plot: saniye bazında (daha hassas)
   const sessionStart = new Date(session.started_at).getTime()
   const mastery_plot = session.trials
     .filter(t => t.input === 'SUCCESS')
     .map(t => ({
-      minute: Math.floor((new Date(t.timestamp).getTime() - sessionStart) / 60000),
+      second: Math.floor((new Date(t.timestamp).getTime() - sessionStart) / 1000),
       cab_level: t.cab_level,
     }))
-    .sort((a, b) => a.minute - b.minute)
+    .sort((a, b) => a.second - b.second)
 
-  // Recovery heatmap: minute buckets for yellow events
+  // Recovery heatmap: 30 saniyelik bucket'lar
   const recovery_heatmap: { minute: number; count: number }[] = []
   const heatmapMap = new Map<number, number>()
   session.recovery_events.forEach(r => {
-    const minute = Math.floor((r.started_at - sessionStart) / 60000)
-    heatmapMap.set(minute, (heatmapMap.get(minute) || 0) + 1)
+    const bucket = Math.floor((r.started_at - sessionStart) / 30000) // 30sn bucket
+    heatmapMap.set(bucket, (heatmapMap.get(bucket) || 0) + 1)
   })
-  heatmapMap.forEach((count, minute) => {
-    recovery_heatmap.push({ minute, count })
+  heatmapMap.forEach((count, bucket) => {
+    recovery_heatmap.push({ minute: bucket, count })
   })
   recovery_heatmap.sort((a, b) => a.minute - b.minute)
 

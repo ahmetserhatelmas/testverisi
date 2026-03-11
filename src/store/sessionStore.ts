@@ -257,10 +257,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
     const newConsecutive = consecutiveSuccesses + 1
     const levelUpPending = newConsecutive >= 3 && cabLevel < 4
+    // CAB 4'te max seviye — 3'e ulaşınca sayacı sıfırla
+    const finalConsecutive = newConsecutive >= 3 && cabLevel === 4 ? 0 : newConsecutive
 
     set(s => ({
       sdActive: false,
-      consecutiveSuccesses: levelUpPending ? newConsecutive : newConsecutive,
+      consecutiveSuccesses: finalConsecutive,
       levelUpPending,
       timers: { ...s.timers, t4_start: null },
       session: s.session ? { ...s.session, trials: [...s.session.trials, trial] } : s.session,

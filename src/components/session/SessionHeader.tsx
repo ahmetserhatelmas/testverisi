@@ -48,9 +48,7 @@ export function SessionHeader() {
             />
           ))}
         </div>
-        {consecutiveSuccesses > 0 && (
-          <span className="text-xs text-green-400 font-medium">{consecutiveSuccesses}/3</span>
-        )}
+        <span className="text-xs text-green-400/60 font-medium">{consecutiveSuccesses}/3</span>
       </div>
 
       {/* Right: Timers */}

@@ -54,7 +54,7 @@ export interface SessionAnalytics {
   avg_recovery_seconds: number
   tolerance_index: number
   compassion_latency: number   // ms
-  mastery_plot: { minute: number; cab_level: CABLevel }[]
+  mastery_plot: { second: number; cab_level: CABLevel }[]
   recovery_heatmap: { minute: number; count: number }[]
   state_distribution: { GREEN: number; YELLOW: number; RED: number }
 }

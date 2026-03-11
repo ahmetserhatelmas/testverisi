@@ -75,7 +75,7 @@ export function AnalyticsDashboard({ session, onClose }: Props) {
           />
         </div>
 
-        {/* Seans Süresi */}
+        {/* Metrikler */}
         <div className="grid grid-cols-2 gap-3">
           <MetricRow label="Toplam Seans" value={formatTime(session.timers.t1_session)} />
           <MetricRow label="HRE Süresi" value={formatTime(session.timers.t2_hre)} />
@@ -84,22 +84,36 @@ export function AnalyticsDashboard({ session, onClose }: Props) {
             label="Şefkat Hızı"
             value={analytics.compassion_latency > 0 ? `${(analytics.compassion_latency / 1000).toFixed(1)}sn` : '—'}
           />
+          <MetricRow
+            label="Kriz Süresi (T5)"
+            value={session.timers.t5_crisis > 0 ? formatTime(session.timers.t5_crisis) : '—'}
+          />
+          <MetricRow
+            label="Toplam Deneme"
+            value={`${session.trials.length}`}
+          />
+          <MetricRow
+            label="Toparlanma Sayısı"
+            value={`${session.recovery_events.length} kez`}
+          />
+          <MetricRow
+            label="Başarı / Destekli"
+            value={`${session.trials.filter(t => t.input === 'SUCCESS').length} / ${session.trials.filter(t => t.input === 'FAIL').length}`}
+          />
         </div>
 
         {/* Pie Chart */}
         <ChartCard title="HRE Dağılımı (Seans Kalitesi)">
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={85}
+                innerRadius={70}
+                outerRadius={110}
                 paddingAngle={3}
                 dataKey="value"
-                label={({ name, value }) => `${name}: %${value}`}
-                labelLine={false}
               >
                 {pieData.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
@@ -112,11 +126,12 @@ export function AnalyticsDashboard({ session, onClose }: Props) {
               />
             </PieChart>
           </ResponsiveContainer>
-          <div className="flex justify-center gap-4 mt-2">
+          <div className="flex flex-wrap justify-center gap-4 mt-1">
             {pieData.map(d => (
-              <div key={d.name} className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                <span className="text-white/50 text-xs">{d.name}</span>
+              <div key={d.name} className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: d.color }} />
+                <span className="text-white/70 text-sm font-medium">{d.name}</span>
+                <span className="font-bold text-sm" style={{ color: d.color }}>%{d.value}</span>
               </div>
             ))}
           </div>
@@ -129,9 +144,9 @@ export function AnalyticsDashboard({ session, onClose }: Props) {
               <LineChart data={masteryData} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis
-                  dataKey="minute"
+                  dataKey="second"
                   tick={{ fill: '#888', fontSize: 10 }}
-                  tickFormatter={v => `${v}dk`}
+                  tickFormatter={v => v >= 60 ? `${Math.floor(v / 60)}dk` : `${v}sn`}
                 />
                 <YAxis
                   domain={[0.5, 4.5]}
@@ -141,7 +156,10 @@ export function AnalyticsDashboard({ session, onClose }: Props) {
                 />
                 <Tooltip
                   formatter={(v) => `CAB ${v}`}
-                  labelFormatter={l => `${l}. dakika`}
+                  labelFormatter={l => {
+                    const s = Number(l)
+                    return s >= 60 ? `${Math.floor(s / 60)}dk ${s % 60}sn` : `${s}. saniye`
+                  }}
                   contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 8 }}
                   itemStyle={{ color: '#22c55e' }}
                 />
@@ -166,11 +184,23 @@ export function AnalyticsDashboard({ session, onClose }: Props) {
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={recoveryData} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                <XAxis dataKey="minute" tick={{ fill: '#888', fontSize: 10 }} tickFormatter={v => `${v}dk`} />
+                <XAxis
+                  dataKey="minute"
+                  tick={{ fill: '#888', fontSize: 10 }}
+                  tickFormatter={v => {
+                    const sec = v * 30
+                    if (sec === 0) return '0'
+                    return sec >= 60 ? `${Math.floor(sec / 60)}dk` : `${sec}sn`
+                  }}
+                />
                 <YAxis tick={{ fill: '#888', fontSize: 10 }} allowDecimals={false} />
                 <Tooltip
                   formatter={(v) => [`${v} kez`, 'Sarı Işık']}
-                  labelFormatter={l => `${l}. dakika`}
+                  labelFormatter={l => {
+                    const sec = Number(l) * 30
+                    if (sec === 0) return 'Seans başlangıcı (0-30sn)'
+                    return sec >= 60 ? `${Math.floor(sec / 60)}dk ${sec % 60 > 0 ? `${sec % 60}sn` : ''}` : `${sec}. saniye`
+                  }}
                   contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 8 }}
                   itemStyle={{ color: '#eab308' }}
                 />

@@ -323,23 +323,40 @@ function SessionDetail({ session, analytics, onBack }: {
         <MetricCard label="HRE Süresi" value={formatTime(session.timers.t2_hre)} />
         <MetricCard label="Deneme Sayısı" value={`${session.trials.length}`} />
         <MetricCard label="Tolerans Endeksi" value={analytics.tolerance_index.toFixed(2)} />
+        <MetricCard
+          label="Kriz Süresi (T5)"
+          value={session.timers.t5_crisis > 0 ? formatTime(session.timers.t5_crisis) : '—'}
+        />
+        <MetricCard
+          label="Toparlanma Sayısı"
+          value={`${session.recovery_events.length} kez`}
+        />
+        <MetricCard
+          label="Başarı / Destekli"
+          value={`${session.trials.filter(t => t.input === 'SUCCESS').length} / ${session.trials.filter(t => t.input === 'FAIL').length}`}
+        />
+        <MetricCard
+          label="Şefkat Hızı"
+          value={analytics.compassion_latency > 0 ? `${(analytics.compassion_latency / 1000).toFixed(1)}sn` : '—'}
+        />
       </div>
 
       {/* Pie */}
       <ChartBox title="Seans Kalitesi">
-        <ResponsiveContainer width="100%" height={180}>
+        <ResponsiveContainer width="100%" height={240}>
           <PieChart>
-            <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
+            <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3} dataKey="value">
               {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
             </Pie>
             <Tooltip formatter={v => `%${v}`} contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 8 }} itemStyle={{ color: '#fff' }} />
           </PieChart>
         </ResponsiveContainer>
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-4 mt-1">
           {pieData.map(d => (
-            <div key={d.name} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-              <span className="text-white/40 text-xs">{d.name}: %{d.value}</span>
+            <div key={d.name} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: d.color }} />
+              <span className="text-white/70 text-sm font-medium">{d.name}</span>
+              <span className="font-bold text-sm" style={{ color: d.color }}>%{d.value}</span>
             </div>
           ))}
         </div>
@@ -351,9 +368,21 @@ function SessionDetail({ session, analytics, onBack }: {
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={analytics.mastery_plot} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis dataKey="minute" tick={{ fill: '#555', fontSize: 10 }} tickFormatter={v => `${v}dk`} />
+              <XAxis
+                dataKey="second"
+                tick={{ fill: '#555', fontSize: 10 }}
+                tickFormatter={v => v >= 60 ? `${Math.floor(v / 60)}dk` : `${v}sn`}
+              />
               <YAxis domain={[0.5, 4.5]} ticks={[1,2,3,4]} tick={{ fill: '#555', fontSize: 10 }} tickFormatter={v => `CAB${v}`} />
-              <Tooltip formatter={v => `CAB ${v}`} labelFormatter={l => `${l}. dakika`} contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 8 }} itemStyle={{ color: '#22c55e' }} />
+              <Tooltip
+                formatter={v => `CAB ${v}`}
+                labelFormatter={l => {
+                  const s = Number(l)
+                  return s >= 60 ? `${Math.floor(s / 60)}dk ${s % 60}sn` : `${s}. saniye`
+                }}
+                contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 8 }}
+                itemStyle={{ color: '#22c55e' }}
+              />
               <Line type="monotone" dataKey="cab_level" stroke="#22c55e" strokeWidth={2} dot={{ fill: '#22c55e', r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
