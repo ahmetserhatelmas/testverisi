@@ -134,38 +134,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     if (appState === 'GREEN' || appState === 'YELLOW' || !session) return
     const now = Date.now()
 
-    // Accumulate T3 if coming from YELLOW
-    if (appState === 'YELLOW' && timers.t3_start) {
-      const t3Duration = now - timers.t3_start
-      // update last recovery event
-      const updatedRecoveries = [...session.recovery_events]
-      if (updatedRecoveries.length > 0) {
-        const last = updatedRecoveries[updatedRecoveries.length - 1]
-        if (last.ended_at === null) {
-          updatedRecoveries[updatedRecoveries.length - 1] = {
-            ...last,
-            ended_at: now,
-            duration: t3Duration,
-          }
-        }
-      }
-      set(s => ({
-        appState: 'GREEN',
-        sdActive: false,
-        timers: { ...s.timers, t2_start: now, t3_start: null, t4_start: null },
-        session: { ...session, recovery_events: updatedRecoveries },
-      }))
-    } else {
-      set(s => ({
-        appState: 'GREEN',
-        sdActive: false,
-        timers: { ...s.timers, t2_start: now, t3_start: null, t4_start: null },
-      }))
-    }
+    // pressGreen sadece RED moddan çağrılır (resolveRed dışı manuel kullanım)
+    set(s => ({
+      appState: 'GREEN',
+      sdActive: false,
+      timers: { ...s.timers, t2_start: now, t3_start: null, t4_start: null },
+    }))
   },
 
   pressYellow: () => {
-    const { appState, timers, cabLevel, session } = get()
+    const { appState, timers, cabLevel, session, sdActive } = get()
     if (appState === 'YELLOW' || appState === 'RED' || !session) return
     const now = Date.now()
 
@@ -175,6 +153,19 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
     // Start T3, add recovery event
     const recoveryEvent: RecoveryEvent = { started_at: now, ended_at: null, duration: null }
+
+    // Eğer SD açıkken fısıltıya basılıyorsa → şefkat hızı kaydı (ASSENT_WITHDRAWAL)
+    const latency = timers.t4_start ? now - timers.t4_start : null
+    const sdTrials: Trial[] = sdActive ? [{
+      trial_id: crypto.randomUUID(),
+      session_id: session.session_id,
+      timestamp: new Date(now).toISOString(),
+      state_at_start: 'GREEN',
+      cab_level: cabLevel,
+      input: 'ASSENT_WITHDRAWAL',
+      latency,
+      result_state: 'YELLOW',
+    }] : []
 
     set(s => ({
       appState: 'YELLOW',
@@ -189,7 +180,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         t4_start: null,
       },
       session: s.session
-        ? { ...s.session, recovery_events: [...s.session.recovery_events, recoveryEvent] }
+        ? {
+            ...s.session,
+            recovery_events: [...s.session.recovery_events, recoveryEvent],
+            trials: sdTrials.length > 0
+              ? [...s.session.trials, ...sdTrials]
+              : s.session.trials,
+          }
         : s.session,
     }))
   },

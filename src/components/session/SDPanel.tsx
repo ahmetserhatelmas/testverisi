@@ -24,12 +24,13 @@ export function SDPanel() {
       <button
         onClick={pressSD}
         disabled={!isGreen || sdActive}
-        className="btn-tactile flex-1 flex flex-col items-center justify-center gap-1 transition-opacity disabled:opacity-40"
+        className="btn-tactile flex-1 flex flex-col items-center justify-center gap-1 transition-opacity"
         style={{
           background: sdActive
             ? (softMode ? 'rgba(147,197,253,0.15)' : 'rgba(59,130,246,0.25)')
             : (softMode ? 'rgba(147,197,253,0.08)' : 'rgba(59,130,246,0.12)'),
           borderBottom: '1px solid rgba(255,255,255,0.08)',
+          opacity: !isGreen && !sdActive ? 0.4 : 1,
         }}
       >
         <span className="text-3xl">📋</span>
